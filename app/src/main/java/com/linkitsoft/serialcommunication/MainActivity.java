@@ -1,20 +1,36 @@
 package com.linkitsoft.serialcommunication;
 
 import android.os.Bundle;
-import android.serialport.SerialPort;
+//import android.serialport.SerialPort;
 import android.util.Log;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
 import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 
 public class MainActivity extends AppCompatActivity {
+
+    static {
+
+        System.loadLibrary("serial_port");
+    }
+
+    public native int openSerialPort(
+            String path,
+            int baudrate
+    );
+
+    public native int writeSerialPort(
+            int fd,
+            byte[] data
+    );
+
+    public native byte[] readSerialPort(
+            int fd
+    );
 
     private static final String TAG =
             "COMMANDS_SERIAL";
@@ -28,8 +44,83 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
 
-        // New Thread because serial communication can block freeze UI thread
         new Thread(() -> {
+            int fd =
+                    openSerialPort(
+                            "/dev/ttyS0",
+                            9600
+                    );
+
+            Log.d("SERIAL_TEST",
+                    "FD = " + fd);
+
+            if (fd < 0) {
+
+                Log.d(
+                        TAG,
+                        "Failed to open serial port"
+                );
+
+                return;
+            }
+
+            byte[] cmd = new byte[]{
+
+                    0x01,
+                    0x00,
+                    0x01,
+                    (byte) 0xD6,
+                    (byte) 0xD6
+            };
+
+            int writeResult =
+                    writeSerialPort(
+                            fd,
+                            cmd
+                    );
+
+            Log.d(
+                    TAG,
+                    "Write Result = "
+                            + writeResult
+            );
+
+            byte[] response =
+                    readSerialPort(fd);
+
+            if (response != null) {
+
+                StringBuilder builder =
+                        new StringBuilder();
+
+                for (byte b : response) {
+
+                    builder.append(
+                            String.format(
+                                    "%02X ",
+                                    b
+                            )
+                    );
+                }
+
+                Log.d(
+                        TAG,
+                        "Response = "
+                                + builder
+                );
+
+            } else {
+
+                Log.d(
+                        TAG,
+                        "No response"
+                );
+            }
+        }).start();
+
+
+        // New Thread because serial communication can block freeze UI thread
+        /*new Thread(() -> {
 
             try {
 
@@ -51,9 +142,9 @@ public class MainActivity extends AppCompatActivity {
 
                 Log.d(TAG, "Streams acquired");
 
-                /*
+                *//*
                  * CLEAR OLD UART DATA
-                 */
+                 *//*
 
                 while (inputStream.available() > 0) {
 
@@ -63,10 +154,10 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG,
                         "Old UART buffer cleared");
 
-                /*
+                *//*
                  * CMD = 214
                  * queryTempAndDoorState
-                 */
+                 *//*
 
                 int cmdCode = 214;
 
@@ -76,7 +167,7 @@ public class MainActivity extends AppCompatActivity {
 
                 int dataLen = data.length;
 
-                /*
+                *//*
                  * PACKET FORMAT:
                  *
                  * [ADDRESS]
@@ -85,7 +176,7 @@ public class MainActivity extends AppCompatActivity {
                  * [CMD]
                  * [DATA]
                  * [CHECKSUM]
-                 */
+                 *//*
 
                 byte[] packet =
                         new byte[dataLen + 5];
@@ -100,9 +191,9 @@ public class MainActivity extends AppCompatActivity {
                 packet[3] =
                         (byte) cmdCode;
 
-                /*
+                *//*
                  * COPY DATA PAYLOAD
-                 */
+                 *//*
 
                 if (dataLen > 0) {
 
@@ -115,9 +206,9 @@ public class MainActivity extends AppCompatActivity {
                     );
                 }
 
-                /*
+                *//*
                  * XOR CHECKSUM
-                 */
+                 *//*
 
                 int checksum = packet[0];
 
@@ -131,9 +222,9 @@ public class MainActivity extends AppCompatActivity {
                 packet[dataLen + 4] =
                         (byte) checksum;
 
-                /*
+                *//*
                  * PRINT SENT PACKET
-                 */
+                 *//*
 
                 StringBuilder sentPacket =
                         new StringBuilder();
@@ -152,9 +243,9 @@ public class MainActivity extends AppCompatActivity {
                         "Sending packet: "
                                 + sentPacket);
 
-                /*
+                *//*
                  * SEND PACKET
-                 */
+                 *//*
 
                 outputStream.write(packet);
 
@@ -163,15 +254,15 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG,
                         "Packet sent");
 
-                /*
+                *//*
                  * MCU PROCESSING DELAY
-                 */
+                 *//*
 
                 Thread.sleep(100);
 
-                /*
+                *//*
                  * WAIT FOR MCU RESPONSE
-                 */
+                 *//*
 
                 int count = 0;
 
@@ -232,7 +323,7 @@ public class MainActivity extends AppCompatActivity {
                         e);
             }
 
-        }).start();
+        }).start();*/
     }
 }
 //Flow
